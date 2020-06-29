@@ -4,7 +4,10 @@ from scrapy_selenium import SeleniumRequest
 from scrapy.spiders import CrawlSpider, Rule
 from scrapy.linkextractors import LinkExtractor
 from collections import OrderedDict
+from selenium import webdriver
+import time
 
+urls = []
 
 class PartsshopmaxSeleniumSpider(CrawlSpider):
     name = 'partsshopmax_selenium'
@@ -19,41 +22,56 @@ class PartsshopmaxSeleniumSpider(CrawlSpider):
         )), callback='parse_result', follow=True),
     )
 
-    # def start_requests(self):
-    #     yield SeleniumRequest( 
-    #         url='https://store.partsshopmax.com/',
-    #         wait_time=3,
-    #         callback='parse_result',
-    #     )          
-            
-  
-    def parse_result(self, response):      
+
+    def parse_result(self, response):
+        global urls
         if response.url.endswith('.html'):
+            urls.append(response.url)
+
+
+    def process_selenium(self):
+        global urls
+        driver = webdriver.Chrome("C:/Users/Ryan/Dev/scrapy/partsshop_app/chromedriver.exe")
+
+        for url in urls:
+            print(url)
+            driver.get(url)
+            time.sleep(5)
+
             # Get item title
-            title = response.xpath("//meta[@property='og:title']/@content").extract_first()
+            title = driver.find_element_by_xpath("//meta[@property='og:title']").get_attribute("content")
             # Get item description
-            description = response.xpath("//section[@id='panel-product-description']/article/div/text()").extract_first()
+            description = driver.find_element_by_xpath("//meta[@property='og:description']").get_attribute("content")
             # Get item price
-            price = response.xpath("//meta[@itemprop='price']/@content").extract_first()
+            price = driver.find_element_by_xpath("//meta[@itemprop='price']").get_attribute("content")
             # Get item price currency
-            price_currency = response.xpath("//meta[@itemprop='priceCurrency']/@content").extract_first()
-            # Get price EURO currency        
-            price_euro = response.xpath("normalize-space(//span[@class='price eudprice eudRemoveIfNotCarried']/text()[2])").get()
-            # Get price TWD currency        
-            price_twd = response.xpath("normalize-space(//span[@class='price twdprice twdRemoveIfNotCarried']/text()[2])").get()
+            price_currency = driver.find_element_by_xpath("//meta[@itemprop='priceCurrency']").get_attribute("content")
+            # Get price EURO currency
+            try:      
+                price_euro = driver.find_element_by_xpath("//span[@class='price eudprice eudRemoveIfNotCarried']").text
+            except:
+                price_euro = None
+            # Get price TWD currency
+            try:
+                price_twd = driver.find_element_by_xpath("//span[@class='price twdprice twdRemoveIfNotCarried']").text
+            except:
+                price_twd = None
             # Get price JPY currency        
-            price_jpy = response.xpath("normalize-space(//span[@class='price jpdprice jpdRemoveIfNotCarried']/text()[2])").get()
+            try:
+                price_jpy = driver.find_element_by_xpath("//span[@class='price jpdprice jpdRemoveIfNotCarried']").text
+            except:
+                price_jpy = None
             # Get item in stock   
-            stock_levels = response.xpath("//button[@class='postfix item-qty-btn half-margin-top']/following-sibling::small/text()").extract_first()
+            stock_levels = driver.find_element_by_xpath("//button[@class='postfix item-qty-btn half-margin-top']/following-sibling::small").text
             # Get item in stock   
-            stock_levels_twd = response.xpath("//form[@id='add-cart-form'][2]/div/div[2]/small/text()[2]").extract_first()          
+            stock_levels_twd = driver.find_element_by_xpath("//form[@id='add-cart-form'][2]/div/div[2]/small").text      
             # Get item SKU
-            sku = response.xpath("//meta[@itemprop='productID']/@content").extract_first()
+            sku = driver.find_element_by_xpath("//meta[@itemprop='productID']").get_attribute('content')
 
             item = OrderedDict()
-            #item['url'] = response.url
-            #item['title'] = title
-            #item['description'] = description
+            item['url'] = url
+            item['title'] = title
+            item['description'] = description
             item['price'] = '{0} {1}'.format(price, price_currency)
             item['price_euro'] = price_euro
             item['price_twd'] = price_twd
@@ -61,7 +79,11 @@ class PartsshopmaxSeleniumSpider(CrawlSpider):
             item['stock_levels'] = stock_levels.strip() if stock_levels else 'Not listed'
             item['stock_levels_twd'] = stock_levels_twd
             item['sku'] = sku
-            yield item
+            print('')
+            print(item)
+            print('')
 
-            
+
+    def closed(self, reason):
+        self.process_selenium()    
  
