@@ -7,7 +7,6 @@
 
 from scrapy import signals
 
-
 class PartsshopAppSpiderMiddleware:
     # Not all methods need to be defined. If a method is not defined,
     # scrapy acts as if the spider middleware does not modify the
@@ -101,3 +100,31 @@ class PartsshopAppDownloaderMiddleware:
 
     def spider_opened(self, spider):
         spider.logger.info('Spider opened: %s' % spider.name)
+
+
+from selenium import webdriver
+from scrapy.http import HtmlResponse
+from selenium.webdriver.chrome.options import Options
+options = Options()
+options.add_argument('-headless')
+options.add_argument('-disable-gpu')  # Last I checked this was necessary.
+
+class SeleniumMiddleware(object):
+    def __init__(self):
+        self.driver = webdriver.Chrome('chromedriver', chrome_options=options) # Or whichever browser you want
+
+    # Here you get the request you are making to the urls which your LinkExtractor found and use selenium to get them and return a response.
+    def process_request(self, request, spider):
+        if request.url.endswith('.html'):               
+            self.driver.get(request.url)
+
+            for cookie_name, cookie_value in request.cookies.items():
+                self.driver.add_cookie(
+                    {
+                        'name': cookie_name,
+                        'value': cookie_value
+                    }
+                )
+
+            body = self.driver.page_source
+            return HtmlResponse(self.driver.current_url, body=body, encoding='utf-8', request=request)

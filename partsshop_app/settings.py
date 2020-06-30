@@ -85,14 +85,14 @@ ROBOTSTXT_OBEY = True
 
 #SELENIUM
 
-from shutil import which
+# from shutil import which
 
-SELENIUM_DRIVER_NAME='chrome'
-SELENIUM_DRIVER_EXECUTABLE_PATH=which("C:/Users/Ryan/Dev/scrapy/partsshop_app/chromedriver.exe")
-SELENIUM_DRIVER_ARGUMENTS=['-headless']  # '--headless' if using chrome instead of firefox
+# SELENIUM_DRIVER_NAME='chrome'
+# SELENIUM_DRIVER_EXECUTABLE_PATH=which("chromedriver")
+# SELENIUM_DRIVER_ARGUMENTS=['-headless']  # '--headless' if using chrome instead of firefox
 
 # Enable or disable downloader middlewares
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 DOWNLOADER_MIDDLEWARES = {
-    'scrapy_selenium.SeleniumMiddleware': 800
+    'partsshop_app.middlewares.SeleniumMiddleware': 543
 }
